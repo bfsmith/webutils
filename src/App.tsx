@@ -1,8 +1,41 @@
 import { A, Route, Router } from '@solidjs/router';
-import { createSignal, For, Show, type Component, type JSX } from 'solid-js';
+import {
+  createSignal,
+  For,
+  onCleanup,
+  onMount,
+  Show,
+  type Component,
+  type JSX,
+} from 'solid-js';
 
 import PdfMergePage from './PdfMergePage';
+import './starfield.js';
 import { accentClasses, type UtilityAccent, UtilityPage } from './UtilityPage';
+
+type StarfieldApi = {
+  setup: (config: {
+    container: HTMLElement;
+    starColor: string;
+    canvasColor: string;
+    hueJitter: number;
+    trailLength: number;
+    baseSpeed: number;
+    maxAcceleration: number;
+    accelerationRate: number;
+    decelerationRate: number;
+    minSpawnRadius: number;
+    maxSpawnRadius: number;
+    auto: boolean;
+  }) => void;
+  cleanup: () => void;
+};
+
+declare global {
+  interface Window {
+    Starfield?: StarfieldApi;
+  }
+}
 
 type Utility = {
   title: string;
@@ -58,9 +91,40 @@ const App: Component = () => {
 
 const Layout: Component<{ children?: JSX.Element }> = (props) => {
   const [isMenuOpen, setIsMenuOpen] = createSignal(false);
+  let starfieldContainer: HTMLDivElement | undefined;
+
+  onMount(() => {
+    if (!starfieldContainer || !window.Starfield) {
+      return;
+    }
+
+    window.Starfield.setup({
+      container: starfieldContainer,
+      starColor: 'rgb(255, 255, 255)',
+      canvasColor: 'rgb(0, 0, 0)',
+      hueJitter: 0,
+      trailLength: 0.45,
+      baseSpeed: 1,
+      maxAcceleration: 2,
+      accelerationRate: 0.05,
+      decelerationRate: 0.05,
+      minSpawnRadius: 80,
+      maxSpawnRadius: 500,
+      auto: false,
+    });
+  });
+
+  onCleanup(() => {
+    window.Starfield?.cleanup();
+  });
 
   return (
     <div class="min-h-screen overflow-hidden text-slate-100">
+      <div
+        ref={starfieldContainer}
+        class="starfield pointer-events-none fixed inset-0 z-0"
+        aria-hidden="true"
+      />
       <div class="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10">
         <header class="glass-nav z-30 mb-10 px-5 py-4">
           <nav class="relative flex w-full items-center justify-between gap-3 text-sm font-medium text-slate-300">

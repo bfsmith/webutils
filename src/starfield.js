@@ -17,7 +17,7 @@
   } else {
     root.Starfield = factory();
   }
-}(this, function() {
+}(typeof globalThis !== "undefined" ? globalThis : this, function() {
   const Starfield = {};
 
   const config = {
