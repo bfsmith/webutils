@@ -1,23 +1,24 @@
-# Use Node.js 22 as specified in package.json engines
-FROM node:24-alpine AS base
+# syntax=docker/dockerfile:1.4
+# Use Bun as the package manager and JavaScript runtime
+FROM oven/bun:1-alpine AS base
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package.json bun.lock ./
 
 # Install dependencies
-RUN npm ci && npm cache clean --force
+RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN bun run build
 
 # Production stage
-FROM node:24-alpine AS production
+FROM oven/bun:1-alpine AS production
 
 # Set working directory
 WORKDIR /app
@@ -25,16 +26,14 @@ WORKDIR /app
 # Copy built application from build stage
 COPY --from=base /app/dist ./dist
 COPY --from=base /app/package.json ./
-
-# Install a simple static file server
-RUN npm install -g serve
+COPY --from=base /app/server.ts ./
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
+RUN addgroup -g 1001 -S bunjs && \
     adduser -S solidjs -u 1001
 
 # Change ownership of app directory to non-root user
-RUN chown -R solidjs:nodejs /app
+RUN chown -R solidjs:bunjs /app
 USER solidjs
 
 # Expose port
@@ -48,5 +47,5 @@ ENV NODE_ENV=production
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
 
-# Start the application using serve
-CMD ["serve", "-s", "dist", "-l", "3000"]
+# Start the application using Bun
+CMD ["bun", "server.ts"]
